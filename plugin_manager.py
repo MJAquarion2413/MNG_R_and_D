@@ -1,22 +1,29 @@
 import importlib
+import logging
+
 import os
 from pathlib import Path
+from signal_warehouse import SignalWarehouse
 
 
 class PluginManager:
     def __init__(self, main_window):
         self.main_window = main_window
+        self.signal_warehouse = SignalWarehouse()
         self.plugins = {}  # Dictionary to store loaded plugins
         self.load_plugins()
 
     def load_plugins(self):
         plugins_path = Path(__file__).parent / "plugins"  # Determine the plugin directory path
+
+        print(f"Loading plugins from {plugins_path}")
+
         plugin_files = [f.stem for f in plugins_path.glob("*.py") if
                         f.name != "__init__.py"]  # List all .py files except __init__.py
 
         for plugin_name in plugin_files:
             module = importlib.import_module(f'plugins.{plugin_name}')  # Dynamically import the plugin module
-            plugin = module.Plugin(self.main_window)  # Instantiate the plugin
+            plugin = module.Plugin(self.main_window, self.signal_warehouse)  # Instantiate the plugin
             self.plugins[plugin_name] = plugin  # Store the plugin instance
             plugin.enable()  # Enable the plugin
 
@@ -32,7 +39,7 @@ class PluginManager:
     def load_plugin(self, plugin_name):
         if plugin_name not in self.plugins:
             module = importlib.import_module(f'plugins.{plugin_name}')
-            plugin = module.Plugin(self.main_window)
+            plugin = module.Plugin(self.main_window, self.signal_warehouse)
             self.plugins[plugin_name] = plugin
             plugin.enable()
 

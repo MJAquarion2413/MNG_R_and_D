@@ -1,6 +1,6 @@
 # MainWindow.py
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QCheckBox, QListWidget, QDockWidget, QTextEdit, \
-    QHBoxLayout, QApplication, QListWidgetItem
+    QHBoxLayout, QApplication, QListWidgetItem, QPushButton
 from PySide6.QtCore import Qt
 
 from plugin_manager import PluginManager
@@ -14,10 +14,12 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Qt Plugin-based Application")
         self.setGeometry(100, 100, 800, 600)
 
+        # loads plugins, and send access to GUI to plugin manager
         self.plugin_manager = PluginManager(self)
         self.plugin_widgets = {}
 
         self.initUI()
+        self.init_core_plugins()
 
     def initUI(self):
         self.create_docking_area()
@@ -33,15 +35,26 @@ class MainWindow(QMainWindow):
         self.plugin_control_panel = QListWidget(self)
         self.plugin_control_panel.setFixedWidth(200)
 
-        plugin_names = ['ButtonPlugin', 'PopupPlugin']
+        plugin_names = ['plugin_A', 'plugin_B']
         for name in plugin_names:
             logging.info(f"Adding {name} to the plugin control panel")
             item = QListWidgetItem(self.plugin_control_panel)
-            checkbox = QCheckBox(f"Enable {name}", self.plugin_control_panel)
-            checkbox.stateChanged.connect(self.toggle_plugin(name))
-            item.setSizeHint(checkbox.sizeHint())
+            on_off_switch = QPushButton(f"Enable {name}", self.plugin_control_panel)
+            on_off_switch.setCheckable(True)
+            on_off_switch.setStyleSheet("""
+                QPushButton {
+                    background-color: red;  /* Default, 'off' state color */
+                    color: white;  /* Text color */
+                }
+                QPushButton:checked {
+                    background-color: green;  /* 'On' state color */
+                    color: black;
+                }
+            """)
+            on_off_switch.clicked.connect(self.toggle_plugin(name, on_off_switch.isChecked()))
+            item.setSizeHint(on_off_switch.sizeHint())
             self.plugin_control_panel.addItem(item)
-            self.plugin_control_panel.setItemWidget(item, checkbox)
+            self.plugin_control_panel.setItemWidget(item, on_off_switch)
 
 
         # Add the plugin control panel as a dockable widget to the left
@@ -50,16 +63,13 @@ class MainWindow(QMainWindow):
         control_dock.setWidget(self.plugin_control_panel)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, control_dock)
 
-    def toggle_plugin(self, plugin_name):
-        def handle_checkbox(state):
-            if state == Qt.CheckState.Checked:
-                self.plugin_manager.load_plugin(plugin_name)
-                self.add_plugin_to_dock(plugin_name)
-            else:
-                self.plugin_manager.unload_plugin(plugin_name)
-                self.remove_plugin_from_dock(plugin_name)
-
-        return handle_checkbox
+    def toggle_plugin(self, plugin_name, state):
+        if state == Qt.CheckState.Checked:
+            self.plugin_manager.load_plugin(plugin_name)
+            self.add_plugin_to_dock(plugin_name)
+        else:
+            self.plugin_manager.unload_plugin(plugin_name)
+            self.remove_plugin_from_dock(plugin_name)
 
     def add_plugin_to_dock(self, plugin_name):
         color = 'green' if plugin_name == 'ButtonPlugin' else 'blue'
@@ -81,3 +91,11 @@ class MainWindow(QMainWindow):
         # Clean up plugins before closing
         self.plugin_manager.unload_plugins()
         super().closeEvent(event)
+
+    def init_core_plugins(self):
+        # Load core plugins
+        self.plugin_manager.load_plugin('plugin_A')
+        self.plugin_manager.load_plugin('plugin_B')
+        self.add_plugin_to_dock('plugin_A')
+        self.add_plugin_to_dock('plugin_B')
+

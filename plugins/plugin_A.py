@@ -1,15 +1,17 @@
 # plugins/ButtonPlugin.py
 from PySide6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QMessageBox
-from PySide6.QtCore import QObject
-from signal_warehouse import SignalWarehouse
+from PySide6.QtCore import QObject, Signal
 
 
 class Plugin(QObject):
-    def __init__(self, main_window):
+    buttonPressedSignal = Signal()
+
+    def __init__(self, main_window, signal_warehouse):
         super().__init__(main_window)
         self.main_window = main_window
+        self.signal_warehouse = signal_warehouse
+        self.signal_warehouse.register_signal('buttonPressedSignal', self.buttonPressedSignal)
         self.setup_ui()
-        SignalWarehouse.connect_signal('taskCompletedSignal', self.complete_chain)
 
     def setup_ui(self):
         self.button = QPushButton("Press Me")
@@ -21,10 +23,7 @@ class Plugin(QObject):
         self.main_window.setCentralWidget(widget)
 
     def emit_signal_to_popup(self):
-        SignalWarehouse.emit_signal('buttonPressedSignal')
-
-    def complete_chain(self):
-        QMessageBox.information(None, "Notification", "Signal chain completed")
+        self.signal_warehouse.emit_signal('buttonPressedSignal')
 
     def enable(self):
         print("ButtonPlugin enabled")
