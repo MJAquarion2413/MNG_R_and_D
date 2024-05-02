@@ -19,7 +19,6 @@ class MainWindow(QMainWindow):
         self.plugin_widgets = {}
 
         self.initUI()
-        self.init_core_plugins()
 
     def initUI(self):
         self.create_docking_area()
@@ -51,7 +50,7 @@ class MainWindow(QMainWindow):
                     color: black;
                 }
             """)
-            on_off_switch.clicked.connect(self.toggle_plugin(name, on_off_switch.isChecked()))
+            on_off_switch.toggled.connect(lambda checked, name=name: self.enable_plugin(name) if checked else self.disable_plugin(name))
             item.setSizeHint(on_off_switch.sizeHint())
             self.plugin_control_panel.addItem(item)
             self.plugin_control_panel.setItemWidget(item, on_off_switch)
@@ -63,13 +62,15 @@ class MainWindow(QMainWindow):
         control_dock.setWidget(self.plugin_control_panel)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, control_dock)
 
-    def toggle_plugin(self, plugin_name, state):
-        if state == Qt.CheckState.Checked:
-            self.plugin_manager.load_plugin(plugin_name)
-            self.add_plugin_to_dock(plugin_name)
-        else:
-            self.plugin_manager.unload_plugin(plugin_name)
-            self.remove_plugin_from_dock(plugin_name)
+    def enable_plugin(self, plugin_name):
+        print(f"Enable {plugin_name}")
+        self.plugin_manager.load_plugin(plugin_name)
+        self.add_plugin_to_dock(plugin_name)
+
+    def disable_plugin(self, plugin_name):
+        print(f"Disable {plugin_name}")
+        self.plugin_manager.unload_plugin(plugin_name)
+        self.remove_plugin_from_dock(plugin_name)
 
     def add_plugin_to_dock(self, plugin_name):
         color = 'green' if plugin_name == 'ButtonPlugin' else 'blue'
@@ -92,10 +93,12 @@ class MainWindow(QMainWindow):
         self.plugin_manager.unload_plugins()
         super().closeEvent(event)
 
+    """
     def init_core_plugins(self):
         # Load core plugins
         self.plugin_manager.load_plugin('plugin_A')
         self.plugin_manager.load_plugin('plugin_B')
         self.add_plugin_to_dock('plugin_A')
         self.add_plugin_to_dock('plugin_B')
+    """
 
