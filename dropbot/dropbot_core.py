@@ -1,21 +1,25 @@
 import asyncio
 import logging
+from typing import Union
+
 import numpy as np
 from nptyping import NDArray, Shape, UInt8
 import serial_asyncio
 import dropbot
 
+
 class DropbotController:
     def __init__(self):
-        self.proxy = None
+        self.proxy: Union[None, dropbot.SerialProxy] = None
         self.last_state: NDArray[Shape['*, 1'], UInt8] = np.zeros(128, dtype='uint8')
         self.loop = asyncio.get_event_loop()
 
     async def init_dropbot_proxy(self):
         while self.proxy is None:
             try:
-                _, self.proxy = await serial_asyncio.open_serial_connection(url='hwgrep://USB Serial', baudrate=115200)
-                break
+                port = await serial_asyncio.open_serial_connection(url='hwgrep://USB Serial', baudrate=115200)
+                self.proxy = dropbot.SerialProxy(port)
+                logging.info("Connected to DropBot.")
             except Exception as e:
                 logging.error(f"Connection failed: {e}, retrying in 1 second.")
                 await asyncio.sleep(1)
@@ -34,6 +38,7 @@ class DropbotController:
         self.loop.run_until_complete(self.init_dropbot_proxy())
         self.loop.create_task(self.poll_voltage())
         self.loop.run_forever()
+
 
 if __name__ == "__main__":
     controller = DropbotController()
